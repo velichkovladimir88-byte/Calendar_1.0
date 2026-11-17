@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ff758c" id="theme-color-meta">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Наш Настрій & Цикл</title>
+    <style>
+        /* Теми оформлення */
+        body.theme-tigrachka {
+            --primary: #ff4757;
+            --primary-light: #ff6b81;
+            --card-bg: rgba(30, 39, 46, 0.42);
+            --text: #f1f2f6;
+            --header-bg: linear-gradient(135deg, rgba(20, 25, 30, 0.85), rgba(40, 45, 55, 0.85));
+            --cal-header-bg: rgba(30, 39, 46, 0.55);
+            --cal-header-border: rgba(255, 255, 255, 0.15);
+            --cal-header-btn: rgba(255, 255, 255, 0.12);
+            --day-num-color: #f1f2f6;
+            --label-color: #f5f6fa;
+            --today-border: #ffffff;
+        }
+
+        body.theme-kysiadlo {
+            --primary: #ff758c;
+            --primary-light: #ff7eb3;
+            --card-bg: rgba(255, 255, 255, 0.38);
+            --text: #11161b;
+            --header-bg: linear-gradient(135deg, rgba(255, 117, 140, 0.72), rgba(255, 126, 179, 0.72));
+            --cal-header-bg: rgba(255, 255, 255, 0.45);
+            --cal-header-border: rgba(255, 255, 255, 0.35);
+            --cal-header-btn: rgba(255, 255, 255, 0.65);
+            --day-num-color: #111;
+            --label-color: #111;
+            --today-border: #ff758c;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        body {
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100dvh;
+            color: var(--text);
+            padding-bottom: 40px;
+            background-color: #2d3436;
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.2);
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        /* Верхня панель */
+        header {
+            background: var(--header-bg);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            color: white;
+            padding: 8px 12px;
+            text-align: center;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        header h1 { margin: 0; font-size: 1.05rem; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        
+        .bg-btn {
+            background: rgba(255, 255, 255, 0.25);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Вибір ролі */
+        .role-switch {
+            display: inline-flex;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 16px;
+            padding: 2px;
+        }
+        .role-btn {
+            border: none;
+            background: transparent;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .role-btn.active { background: white; color: var(--primary); }
+
+        /* Навігація календаря */
+        .cal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            margin: 10px 12px 6px 12px;
+            background: var(--cal-header-bg);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid var(--cal-header-border);
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .cal-header button {
+            background: var(--cal-header-btn);
+            border: 1px solid var(--cal-header-border);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: var(--text);
+        }
+
+        /* Сітка календаря */
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            padding: 0 8px;
+        }
+        .day-name {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #ffffff;
+            font-weight: bold;
+            margin-bottom: 3px;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+        }
+
+        /* Клітинка дня */
+        .day {
+            background: var(--card-bg);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            border-radius: 10px;
+            height: 96px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            overflow: hidden;
+        }
+        .day.empty {
+            background: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            box-shadow: none;
+            border: none;
+            cursor: default;
+        }
+        .day.today { border: 2px solid var(--today-border); }
+        
+        .day.period {
+            background: rgba(15, 19, 23, 0.88) !important;
+            border: 1.5px solid #2f3640;
+        }
+        .day.period .day-num,
+        .day.period .full-mood-text,
+        .day.period .mood-sublabel {
+            color: #f1f2f6 !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9) !important;
+        }
+
+        .day.hot-red {
+            background: rgba(235, 47, 6, 0.68) !important;
+            border: 1.5px solid #ff3f34 !important;
+        }
+        .day.hot-red .day-num,
+        .day.hot-red .full-mood-text,
+        .day.hot-red .mood-sublabel {
+            color: #ffffff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important;
+        }
+
+        .day-top {
+            height: 20px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .day.period .day-top {
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .day-num {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--day-num-color);
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+        }
+        .period-drop { font-size: 0.58rem; }
+
+        .day-bottom {
+            flex: 1;
+            display: flex;
+            width: 100%;
+            overflow: hidden;
+        }
+        .day-side {
+            flex: 1;
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 1px;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .day-side:first-child {
+            border-right: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .day.period .day-side:first-child {
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .mood-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            line-height: 1;
+        }
+        .mood-emoji { font-size: 0.85rem; }
+        .full-mood-text {
+            font-size: 0.42rem;
+            font-weight: 700;
+            color: var(--label-color);
+            text-align: center;
+            line-height: 1.05;
+            word-break: break-word;
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.85);
+            margin-top: 1px;
+        }
+        body.theme-tigrachka .full-mood-text {
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+        }
+
+        .lottery-badge {
+            font-size: 0.45rem;
+            background: #f39c12;
+            color: white;
+            padding: 1px 3px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-top: 1px;
+            text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Статистика внизу */
+        .stats-container {
+            display: none;
+            margin: 15px 12px 0 12px;
+            background: rgba(30, 39, 46, 0.65);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            padding: 12px 16px;
+            justify-content: space-around;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .stats-container.visible { display: flex; }
+        .stat-item .stat-num { font-size: 1.2rem; font-weight: bold; color: #ff6b81; }
+        .stat-item .stat-label { font-size: 0.7rem; color: #dcdde1; margin-top: 2px; }
+
+        /* Модальні вікна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.55);
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 100;
+        }
+        .modal.open { display: flex; }
+        .modal-content {
+            background: #ffffff;
+            color: #2d3436;
+            width: 100%;
+            max-width: 500px;
+            border-top-left-radius: 25px;
+            border-top-right-radius: 25px;
+            padding: 22px 18px;
+            animation: slideUp 0.25s ease-out;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .modal h3 { margin: 0 0 10px 0; text-align: center; }
+        .mood-hint { font-size: 0.8rem; color: #636e72; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .mood-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 10px 0 16px 0;
+        }
+        .mood-option {
+            background: #f1f2f6;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 8px 3px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 1.35rem;
+            transition: 0.15s;
+        }
+        .mood-option span { display: block; font-size: 0.65rem; margin-top: 3px; color: #2d3436; line-height: 1.1; }
+        .mood-option.selected { border-color: var(--primary); background: #fff0f3; font-weight: bold; }
+
+        .cycle-toggle {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            background: #f1f2f6;
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin: 12px 0;
+            color: #2d3436;
+            font-weight: 600;
+        }
+        .cycle-toggle.visible { display: flex; }
+        .cycle-toggle input { width: 20px; height: 20px; accent-color: #2f3640; }
+
+        .lottery-trigger-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #f39c12, #e74c3c);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .lottery-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.65);
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            padding: 20px;
+        }
+        .lottery-modal.open { display: flex; }
+        .lottery-card {
+            background: #fff;
+            color: #2d3436;
+            width: 100%;
+            max-width: 400px;
+            height: 50vh;
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            animation: scaleUp 0.3s ease-out;
+        }
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .btn-close {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .sync-status {
+            text-align: center;
+            font-size: 0.72rem;
+            color: #ffffff;
+            margin: 12px auto 0 auto;
+            padding: 4px 10px;
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 20px;
+            width: fit-content;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="theme-kysiadlo">
+
+<header>
+    <div class="role-switch">
+        <button class="role-btn" id="btn-tigrachka" onclick="setRole('tigrachka')">Тигрячка</button>
+        <button class="role-btn" id="btn-kysiadlo" onclick="setRole('kysiadlo')">Кисядло</button>
+    </div>
+    <h1>Наш простір ❤️</h1>
+    <button class="bg-btn" onclick="changeRandomBg()" title="Змінити фонове фото">🖼️</button>
+</header>
+
+<div class="cal-header">
+    <button onclick="changeMonth(-1)">◀</button>
+    <span id="month-year"></span>
+    <button onclick="changeMonth(1)">▶</button>
+</div>
+
+<div class="calendar" id="calendar-days-names">
+    <div class="day-name">Пн</div><div class="day-name">Вт</div><div class="day-name">Ср</div>
+    <div class="day-name">Чт</div><div class="day-name">Пт</div><div class="day-name">Сб</div><div class="day-name">Нд</div>
+</div>
+<div class="calendar" id="calendar-grid"></div>
+
+<!-- Статистика внизу -->
+<div class="stats-container" id="stats-container">
+    <div class="stat-item">
+        <div class="stat-num" id="stat-red-days">0</div>
+        <div class="stat-label">Червоних днів</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-num" id="stat-tikala-days">0</div>
+        <div class="stat-label">Днів «Тикала» 💧</div>
+    </div>
+</div>
+
+<div class="sync-status" id="sync-status">Підключення до хмари...</div>
+
+<!-- Модальне вікно дня -->
+<div class="modal" id="day-modal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h3 id="modal-date-title">Дата</h3>
+        
+        <button class="lottery-trigger-btn" id="lottery-btn" style="display: none;" onclick="openLottery()">🎁 ЛОТЕРЕЯ!</button>
+
+        <div class="cycle-toggle" id="cycle-box">
+            <label for="period-check">🩸 День циклу (місячні)</label>
+            <input type="checkbox" id="period-check" onchange="togglePeriod()">
+        </div>
+
+        <div class="mood-hint">
+            <span><b>Мій настрій сьогодні:</b></span>
+            <span id="mood-counter">Обрано: 0 / 4</span>
+        </div>
+        <div class="mood-grid" id="mood-selector"></div>
+
+        <button class="btn-close" onclick="closeModal()">Готово</button>
+    </div>
+</div>
+
+<!-- Модальне вікно Лотереї -->
+<div class="lottery-modal" id="lottery-modal">
+    <div class="lottery-card">
+        <h3>🎉 ЛОТЕРЕЯ БАЖАНЬ!</h3>
+        <p id="lottery-prize-text" style="font-size: 1.15rem; font-weight: bold; color: #e74c3c; margin: auto 0;"></p>
+        <button class="btn-close" onclick="closeLottery()">Забрати приз!</button>
+    </div>
+</div>
+
+<script>
+    // Реєстрація Service Worker для роботи PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .catch(err => console.log('SW registration failed:', err));
+        });
+    }
+
+    // Короткі та надійні назви файлів (від 1.jpg до 15.jpg)
+    const WALLPAPERS = [
+        "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg",
+        "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg",
+        "11.jpg", "12.jpg", "13.jpg", "14.jpg", "15.jpg"
+    ];
+
+    let currentBgIndex = -1;
+
+    function changeRandomBg() {
+        if (WALLPAPERS.length === 0) return;
+        let nextIndex;
+        do {
+            nextIndex = Math.floor(Math.random() * WALLPAPERS.length);
+        } while (nextIndex === currentBgIndex && WALLPAPERS.length > 1);
+        
+        currentBgIndex = nextIndex;
+        const imgUrl = WALLPAPERS[currentBgIndex];
+        
+        const img = new Image();
+        img.src = imgUrl;
+        img.onload = () => {
+            document.body.style.backgroundImage = `url('${imgUrl}')`;
+        };
+        img.onerror = () => {
+            document.body.style.backgroundColor = "#ff758c";
+        };
+    }
+
+    changeRandomBg();
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+    import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBNGv8u0WIIiJDvPyj5H8i4Rn6ftpEhVX8",
+        authDomain: "calendar-51a1d.firebaseapp.com",
+        projectId: "calendar-51a1d",
+        storageBucket: "calendar-51a1d.firebasestorage.app",
+        messagingSenderId: "81335900810",
+        appId: "1:81335900810:web:9485a8d8f309ecfbb9eb73",
+        measurementId: "G-0KXKRG8M7T"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    const ALL_MOODS = [
+        { emoji: "🥰", label: "Закоханий", showFull: false },
+        { emoji: "😊", label: "Чудовий", showFull: false },
+        { emoji: "😌", label: "Спокійний", showFull: false },
+        { emoji: "😴", label: "Втомлений", showFull: false },
+        { emoji: "😢", label: "Сумний", showFull: false },
+        { emoji: "😠", label: "Злий", showFull: false },
+        { emoji: "🤯", label: "Стрес", showFull: false },
+        { emoji: "🤒", label: "Хворію", showFull: false },
+        { emoji: "☄️", label: "Хочу комету", showFull: false },
+        { emoji: "🔥", label: "Хочу секса", showFull: true },
+        { emoji: "🤗", label: "Надо пожмакушки", showFull: true },
+        { emoji: "😈", label: "Хочу розврата", showFull: true },
+        { emoji: "💥", label: "Готова на разврат", showFull: true },
+        { emoji: "💧", label: "Тикала", showFull: false, onlyShe: true }
+    ];
+
+    const RED_TRIGGER_EMOJIS = ["🔥", "😈", "💥"];
+
+    function normalizeMoods(val) {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        return [val];
+    }
+
+    let currentDate = new Date();
+    let selectedDateStr = null;
+    let currentRole = localStorage.getItem('couple_role') || 'kysiadlo';
+    let sharedData = {};
+
+    window.setRole = (role) => {
+        currentRole = role;
+        localStorage.setItem('couple_role', role);
+        
+        document.getElementById('btn-tigrachka').classList.toggle('active', role === 'tigrachka');
+        document.getElementById('btn-kysiadlo').classList.toggle('active', role === 'kysiadlo');
+
+        const body = document.body;
+        const metaTheme = document.getElementById('theme-color-meta');
+        const statsContainer = document.getElementById('stats-container');
+
+        if (role === 'tigrachka') {
+            body.className = 'theme-tigrachka';
+            metaTheme.setAttribute('content', '#14191e');
+            statsContainer.classList.add('visible');
+        } else {
+            body.className = 'theme-kysiadlo';
+            metaTheme.setAttribute('content', '#ff758c');
+            statsContainer.classList.remove('visible');
+        }
+        if (typeof renderCalendar === 'function') renderCalendar();
+    };
+    setRole(currentRole);
+
+    onSnapshot(collection(db, "couple_calendar"), (snapshot) => {
+        sharedData = {};
+        snapshot.forEach((doc) => {
+            sharedData[doc.id] = doc.data();
+        });
+        document.getElementById('sync-status').innerText = "🟢 Синхронізовано в реальному часі";
+        renderCalendar();
+    }, (error) => {
+        document.getElementById('sync-status').innerText = "🔴 Помилка підключення. Перевірте Firestore.";
+        console.error(error);
+    });
+
+    function renderSideMoods(moodArray) {
+        if (!moodArray || moodArray.length === 0) return '';
+        return moodArray.map(emoji => {
+            const moodObj = ALL_MOODS.find(m => m.emoji === emoji);
+            const fullText = (moodObj && moodObj.showFull)
+                ? `<div class="full-mood-text">${moodObj.label}</div>`
+                : '';
+            return `<div class="mood-item"><span class="mood-emoji">${emoji}</span>${fullText}</div>`;
+        }).join('');
+    }
+
+    window.renderCalendar = () => {
+        const grid = document.getElementById('calendar-grid');
+        grid.innerHTML = '';
+        
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+        document.getElementById('month-year').innerText = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        let redDaysCount = 0;
+        let tikalaDaysCount = 0;
+
+        for (let i = 0; i < startOffset; i++) {
+            grid.innerHTML += `<div class="day empty"></div>`;
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayData = sharedData[dateStr] || {};
+            
+            const tigrMoods = normalizeMoods(dayData.tigrachka);
+            const kisyMoods = normalizeMoods(dayData.kysiadlo);
+
+            const isToday = dateStr === todayStr ? 'today' : '';
+            const isPeriod = dayData.period ? 'period' : '';
+            const isHotRed = (!dayData.period && kisyMoods.some(e => RED_TRIGGER_EMOJIS.includes(e))) ? 'hot-red' : '';
+            
+            if (isHotRed) redDaysCount++;
+            if (kisyMoods.includes('💧')) tikalaDaysCount++;
+
+            const periodDrop = dayData.period ? '<span class="period-drop">🩸</span>' : '';
+            const lotteryBadge = dayData.lotteryResult ? `<div class="lottery-badge">${dayData.lotteryResult}</div>` : '';
+
+            const cell = document.createElement('div');
+            cell.className = `day ${isToday} ${isPeriod} ${isHotRed}`;
+            cell.innerHTML = `
+                <div class="day-top">
+                    <span class="day-num">${d}</span>
+                    ${periodDrop}
+                </div>
+                <div class="day-bottom">
+                    <div class="day-side">${renderSideMoods(tigrMoods)}</div>
+                    <div class="day-side">${renderSideMoods(kisyMoods)}</div>
+                </div>
+                ${lotteryBadge}
+            `;
+            cell.onclick = () => openModal(dateStr, d, monthNames[month]);
+            grid.appendChild(cell);
+        }
+
+        document.getElementById('stat-red-days').innerText = redDaysCount;
+        document.getElementById('stat-tikala-days').innerText = tikalaDaysCount;
+    };
+
+    window.changeMonth = (delta) => {
+        currentDate.setMonth(currentDate.getMonth() + delta);
+        renderCalendar();
+    };
+
+    function renderModalMoods() {
+        const dayData = sharedData[selectedDateStr] || {};
+        const myMoods = normalizeMoods(dayData[currentRole]);
+
+        document.getElementById('mood-counter').innerText = `Обрано: ${myMoods.length} / 4`;
+
+        const moodGrid = document.getElementById('mood-selector');
+        moodGrid.innerHTML = '';
+
+        const availableMoods = ALL_MOODS.filter(m => !m.onlyShe || currentRole === 'kysiadlo');
+
+        availableMoods.forEach(m => {
+            const isSelected = myMoods.includes(m.emoji);
+            const btn = document.createElement('div');
+            btn.className = `mood-option ${isSelected ? 'selected' : ''}`;
+            btn.innerHTML = `${m.emoji}<span>${m.label}</span>`;
+            btn.onclick = () => toggleMood(m.emoji);
+            moodGrid.appendChild(btn);
+        });
+    }
+
+    window.openModal = (dateStr, dayNum, monthName) => {
+        selectedDateStr = dateStr;
+        const dayData = sharedData[dateStr] || {};
+        
+        document.getElementById('modal-date-title').innerText = `${dayNum} ${monthName}`;
+        
+        const cycleBox = document.getElementById('cycle-box');
+        const lotteryBtn = document.getElementById('lottery-btn');
+
+        if (currentRole === 'kysiadlo') {
+            cycleBox.classList.add('visible');
+            document.getElementById('period-check').checked = !!dayData.period;
+
+            if (!dayData.lotteryResult && Math.random() < 0.35) {
+                lotteryBtn.style.display = 'block';
+            } else {
+                lotteryBtn.style.display = 'none';
+            }
+        } else {
+            cycleBox.classList.remove('visible');
+            lotteryBtn.style.display = 'none';
+        }
+
+        renderModalMoods();
+        document.getElementById('day-modal').classList.add('open');
+    };
+
+    window.closeModal = () => {
+        document.getElementById('day-modal').classList.remove('open');
+    };
+
+    window.openLottery = async () => {
+        if (!selectedDateStr) return;
+        const now = Date.now();
+        const weekMs = 7 * 24 * 60 * 60 * 1000;
+        const monthMs = 30 * 24 * 60 * 60 * 1000;
+
+        let history = JSON.parse(localStorage.getItem('lottery_history') || '[]');
+        history = history.filter(t => now - t < monthMs);
+
+        const wins500 = history.filter(t => now - t < monthMs);
+        const winsThisWeek = history.filter(t => now - t < weekMs);
+
+        let prize = "";
+        let roll500 = Math.random();
+
+        let canWin500 = true;
+        if (winsThisWeek.length >= 2) canWin500 = false;
+        if (wins500.length < 4 && history.length >= 25) canWin500 = true;
+
+        if (roll500 < 0.05 && canWin500) {
+            prize = "💵 500 грн!";
+            history.push(now);
+        } else {
+            const weightedPool = [
+                "💋 Комліменти", "💋 Комліменти",
+                "💦 Помочь слить", "💦 Помочь слить", "💦 Помочь слить",
+                "📸 Скинуть фото Он",
+                "📸 Скинуть фото Она"
+            ];
+            prize = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+        }
+
+        localStorage.setItem('lottery_history', JSON.stringify(history));
+
+        const existing = sharedData[selectedDateStr] || {};
+        const updatedData = { ...existing, lotteryResult: prize };
+        sharedData[selectedDateStr] = updatedData;
+        await setDoc(doc(db, "couple_calendar", selectedDateStr), updatedData);
+
+        document.getElementById('lottery-prize-text').innerText = prize;
+        document.getElementById('lottery-modal').classList.add('open');
+        renderCalendar();
+    };
+
+    window.closeLottery = () => {
+        document.getElementById('lottery-modal').classList.remove('open');
+        document.getElementById('lottery-btn').style.display = 'none';
+    };
+
+    window.togglePeriod = async () => {
+        if (!selectedDateStr || currentRole !== 'kysiadlo') return;
+        const existing = sharedData[selectedDateStr] || {};
+        const updatedData = {
+            ...existing,
+            period: document.getElementById('period-check').checked
+        };
+        sharedData[selectedDateStr] = updatedData;
+        renderCalendar();
+        await setDoc(doc(db, "couple_calendar", selectedDateStr), updatedData);
+    };
+
+    window.toggleMood = async (emoji) => {
+        if (!selectedDateStr) return;
+        const existing = sharedData[selectedDateStr] || {};
+        let myMoods = [...normalizeMoods(existing[currentRole])];
+
+        if (myMoods.includes(emoji)) {
+            myMoods = myMoods.filter(e => e !== emoji);
+        } else {
+            if (myMoods.length >= 4) {
+                alert("Можна вибрати максимум 4 настрої на день!");
+                return;
+            }
+            myMoods.push(emoji);
+        }
+
+        const updatedData = {
+            ...existing,
+            [currentRole]: myMoods
+        };
+
+        sharedData[selectedDateStr] = updatedData;
+        renderModalMoods();
+        renderCalendar();
+
+        await setDoc(doc(db, "couple_calendar", selectedDateStr), updatedData);
+    };
+
+    renderCalendar();
+</script>
+</body>
+</html>
